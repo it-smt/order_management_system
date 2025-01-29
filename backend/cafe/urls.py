@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path
 
 from ninja import NinjaAPI
 
@@ -10,6 +10,5 @@ api_v1.add_router(prefix="main", router=main_router, tags=["Основное"])
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("", include("main.urls", namespace="main")),
     path("api/v1/", api_v1.urls),
 ]

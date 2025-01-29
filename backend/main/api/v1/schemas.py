@@ -2,7 +2,6 @@ from decimal import Decimal
 from enum import Enum
 from typing import List
 from ninja.schema import Schema
-from pydantic import BaseModel, Extra
 
 
 class Status(Enum):
@@ -38,7 +37,7 @@ class SItemShow(SItemAdd, SItem):
     pass
 
 
-class OrderStatus(BaseModel):
+class OrderStatus(Schema):
     """Схема статуса заказа."""
 
     status: Status
@@ -56,10 +55,7 @@ class SOrder(SOrderAdd):
 
     id: int
     total_price: Decimal
-    status: str
-
-    class Config:
-        extra = Extra.ignore
+    status: Status
 
 
 class SStatistics(Schema):
