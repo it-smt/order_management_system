@@ -1,0 +1,55 @@
+.add-btn {
+	border-radius: 50px;
+	background: rgb(65, 74, 121);
+	width: 70px;
+	height: 70px;
+	position: fixed;
+	right: 70px;
+	bottom: 70px;
+	transition: all 0.3s ease 0s;
+}
+
+.add-btn:hover {
+	background: rgb(55, 63, 102);
+}
+
+.add-btn::before,
+.add-btn::after {
+	content: "";
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	background: white;
+	width: 25px;
+	height: 4px;
+	border-radius: 5px;
+}
+
+.add-btn::before {
+	transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.add-btn__body {
+	position: fixed;
+	right: 80px;
+	bottom: 150px;
+	padding: 10px 20px;
+	background-color: rgb(65, 74, 121);
+	border-radius: 15px;
+}
+.add-btn__list {
+}
+.add-btn__item {
+	text-wrap: nowrap;
+	padding: 15px 0;
+	border-bottom: 1px solid #fff;
+	cursor: pointer;
+	color: #fff;
+	font-weight: 700;
+	font-size: 18px;
+}
+.add-btn__item:last-child {
+	margin: 0;
+	border: 0;
+}

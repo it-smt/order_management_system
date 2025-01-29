@@ -1,0 +1,28 @@
+* {
+	font-family: "Nunito", serif;
+}
+
+body {
+	background-color: #a69ae0;
+}
+
+.wrapper {
+	min-height: 100%;
+	overflow: hidden;
+}
+
+.container {
+	max-width: 1440px;
+	margin: 0 auto;
+	padding: 0 20px;
+}
+
+.content {
+	margin: 60px 0 0 0;
+}
+.content__orders {
+	padding: 30px 0 30px 0;
+	display: grid;
+	grid-template-columns: 1fr 1fr 1fr;
+	gap: 25px;
+}

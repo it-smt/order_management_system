@@ -1,0 +1,110 @@
+.order {
+	padding: 16px 20px;
+	border: 1px solid rgb(151, 154, 238);
+	border-radius: 15px;
+	box-shadow: 0px 4px 10px 0px rgba(0, 0, 0, 0.25);
+	background: rgb(77, 85, 195);
+	display: flex;
+	flex-direction: column;
+}
+.order__table {
+	padding: 0 0 10px 0;
+	border-bottom: 1px solid rgb(151, 154, 238);
+	text-align: center;
+	color: rgb(255, 255, 255);
+	font-size: 18px;
+	font-weight: 700;
+	line-height: 25px;
+}
+.order__header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin: 8px 0 11px 0;
+}
+.order__title {
+	color: rgb(255, 255, 255);
+	font-size: 18px;
+	font-weight: 700;
+	line-height: 25px;
+}
+.order__btns {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+.order__btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	border-radius: 50%;
+	transition: all 0.3s ease 0s;
+}
+.order__btn:first-child {
+	background: rgb(217, 165, 49);
+}
+.order__btn:first-child:hover {
+	background: rgb(175, 132, 38);
+}
+.order__btn:last-child {
+	background: rgb(221, 81, 81);
+}
+.order__btn:last-child:hover {
+	background: rgb(177, 62, 62);
+}
+.order__body {
+	flex: 1 1 100%;
+}
+.order__items {
+	border-radius: 15px;
+	background: rgb(151, 154, 238);
+}
+.order__item {
+	border-bottom: 1px solid rgb(77, 85, 195);
+	padding: 5px 15px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+.order__item:last-child {
+	border: 0;
+}
+.order__item-name {
+	color: rgb(255, 255, 255);
+	font-size: 16px;
+	font-weight: 700;
+	line-height: 22px;
+	text-transform: uppercase;
+}
+.order__item-name span {
+	text-transform: lowercase;
+}
+.order__item-price {
+	color: rgb(255, 255, 255);
+	font-size: 16px;
+	font-weight: 700;
+	line-height: 22px;
+}
+.order__footer {
+	margin: 16px 0 0 0;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+.order__status {
+	color: rgb(255, 255, 255);
+	font-size: 18px;
+	font-weight: 700;
+	line-height: 25px;
+}
+.order__status img {
+	cursor: pointer;
+}
+.order__total-price {
+	color: rgb(255, 255, 255);
+	font-size: 18px;
+	font-weight: 700;
+	line-height: 25px;
+}

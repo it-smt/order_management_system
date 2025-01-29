@@ -1,0 +1,137 @@
+.add-order {
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	border-radius: 20px;
+	background: rgb(65, 74, 121);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	max-width: 450px;
+	min-width: 450px;
+	min-height: 500px;
+	padding: 20px 25px 25px 25px;
+}
+.add-order__header {
+	width: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin: 0 0 20px 0;
+}
+.add-order__title,
+.add-order__close {
+	color: rgb(255, 255, 255);
+	font-size: 25px;
+	font-weight: 700;
+	line-height: 34px;
+}
+.add-order__title {
+	font-size: 18px;
+	line-height: 25px;
+}
+.add-order__close {
+	cursor: pointer;
+}
+.add-order__form {
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+.add-order__input {
+	width: 100%;
+	margin: 0 0 10px 0;
+	padding: 13px 15px;
+	border-radius: 15px;
+	background: rgb(255, 255, 255);
+	color: rgb(0, 0, 0);
+	font-size: 18px;
+	font-weight: 700;
+	line-height: 25px;
+}
+.add-order__input::placeholder {
+	color: rgba(0, 0, 0, 0.7);
+}
+.add-order__label {
+	width: 100%;
+}
+.add-order__label-actions {
+	padding: 0 15px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin: 0 0 10px 0;
+}
+.add-order__label-title {
+	color: rgb(255, 255, 255);
+	font-size: 18px;
+	font-weight: 700;
+	line-height: 25px;
+}
+.add-order__label-add {
+	padding: 3px 10px;
+	border-radius: 50%;
+	color: rgb(255, 255, 255);
+	font-size: 18px;
+	font-weight: 700;
+	line-height: 25px;
+	background: rgb(62, 168, 44);
+}
+.add-order__items {
+	padding: 10px 20px;
+	border-radius: 15px;
+	background: rgb(255, 255, 255);
+	height: 236px;
+	margin: 0 0 25px 0;
+	overflow: auto;
+}
+
+.add-order__items::-webkit-scrollbar {
+	width: 0;
+}
+
+.add-order__items {
+	-ms-overflow-style: none;
+}
+
+.add-order__items {
+	overflow: -moz-scrollbars-none;
+}
+
+.add-order__item {
+}
+
+.item {
+	padding: 10px 0;
+	border-bottom: 1px solid #000;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+.item__name {
+	color: rgb(0, 0, 0);
+	font-size: 18px;
+	font-weight: 700;
+	line-height: 25px;
+}
+.item__btn {
+	cursor: pointer;
+	color: rgb(255, 255, 255);
+	font-size: 30px;
+	font-weight: 700;
+	line-height: 18px;
+	padding: 5px 8.5px 7px 8.5px;
+	border-radius: 50px;
+	background: rgb(221, 81, 81);
+}
+.add-order__submit {
+	color: rgb(255, 255, 255);
+	font-size: 18px;
+	font-weight: 700;
+	line-height: 25px;
+	padding: 8px 55px;
+	border-radius: 15px;
+	background: rgb(62, 168, 44);
+}

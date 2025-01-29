@@ -1,0 +1,23 @@
+.add-items__item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 10px 0;
+	border-bottom: 1px solid #000;
+
+	&-name {
+		color: rgb(0, 0, 0);
+		font-size: 18px;
+		font-weight: 700;
+		line-height: 25px;
+	}
+	&-btn {
+		color: rgb(255, 255, 255);
+		font-size: 18px;
+		font-weight: 700;
+		line-height: 25px;
+		padding: 3px 10px;
+		border-radius: 50px;
+		background: rgb(62, 168, 44);
+	}
+}

@@ -1,0 +1,18 @@
+.search {
+	padding: 20px 90px;
+	&__form {
+		display: flex;
+		align-items: center;
+	}
+	&__input {
+		padding: 11px 15px;
+		font-size: 21px;
+		border-radius: 10px 0 0 10px;
+		width: 100%;
+	}
+	&__button {
+		padding: 5px 15px;
+		border-radius: 0 10px 10px 0;
+		background: rgb(65, 74, 121);
+	}
+}

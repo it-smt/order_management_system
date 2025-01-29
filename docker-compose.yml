@@ -1,0 +1,48 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:latest
+    env_file:
+      - ./.env-non-dev
+    container_name: test_task_db
+    ports:
+      - "5432:5432"
+    networks:
+      - test_task_network
+
+  server:
+    build:
+      context: ./backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./.env-non-dev
+    container_name: test_task_server
+    command: gunicorn cafe.wsgi:application --bind 0.0.0.0:8000
+    depends_on:
+      - db
+      - migrations
+    networks:
+      - test_task_network
+
+  migrations:
+    build: ./backend
+    command: python manage.py migrate
+    env_file:
+      - ./.env-non-dev
+    depends_on:
+      - db
+    networks:
+      - test_task_network
+
+  client:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    container_name: test_task_client
+    depends_on:
+      - server
+
+networks:
+  test_task_network:
