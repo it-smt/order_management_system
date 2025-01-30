@@ -1,3 +1,28 @@
+# Тестовое задание
+
+## Инструкция по запуску
+1. Убедитесь, что у вас установлен Docker Compose и запущен Docker Engine
+2. Создайте файл ***.env-non-dev*** в корне проекта и поместите в него следующий код:
+```
+SECRET_KEY=django-insecure-=lw(s=yp3wx%i^su=&ltax!zr4!!w42!^r5(y9d%0#95+t!m1+
+DEBUG=True
+
+DB_NAME=postgres
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_HOST=db
+DB_PORT=5432
+
+POSTGRES_NAME=postgres
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+```
+3. Запустите Docker Compose, выполнив следующую команду в терминале:
+```docker-compose up --build```
+4. Дождитесь завершения процесса запуска.
+
+**Важно**: Не сообщайте данные из файла ***.env-non-dev*** другим пользователям, так как они содержат конфиденциальную информацию.
+
 ## API Documentation
 
 ### Endpoints
