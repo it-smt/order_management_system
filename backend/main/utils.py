@@ -9,25 +9,35 @@ from main.api.v1.schemas import SItem
 from main.models import Item, Order
 
 
-def calculate_amount_items(items_ids: List[SItem]) -> int:
-    """Считает итоговую сумму блюд."""
-    amount: Decimal = Decimal(0)
+def calculate_amount_items(items_ids: List[SItem]) -> Decimal:
+    """
+    Считает итоговую сумму блюд.
 
-    for item in items_ids:
-        obj: Item = get_object_or_404(Item, id=item.id)
-        amount += obj.price
+    Args:
+        items_ids (List[SItem]): Список идентификаторов блюд.
 
-    return amount
+    Returns:
+        Decimal: Итоговая сумма блюд.
+    """
+    return sum(get_object_or_404(Item, id=item.id).price for item in items_ids)
 
 
-def get_dict_from_item(item_id):
-    item = get_object_or_404(Item, id=item_id).__dict__
+def get_dict_from_item(item_id: int) -> dict:
+    item: Dict = get_object_or_404(Item, id=item_id).__dict__
     item.pop("_state")
     return item
 
 
 def get_dict_from_model(model: Model) -> Dict:
-    """Преобразует модель в словарь."""
+    """
+    Преобразует модель в словарь.
+
+    Args:
+        model (Model): Экземпляр модели.
+
+    Returns:
+        Dict: Словарь с полями модели.
+    """
     model_dict: Dict = model.__dict__
     if isinstance(model, Order):
         model_dict["items"] = [
@@ -39,7 +49,15 @@ def get_dict_from_model(model: Model) -> Dict:
 
 
 def status_is_correct(status: str) -> bool | JsonResponse:
-    """Проверяет корректность статуса заказа."""
+    """
+    Проверяет корректность статуса заказа.
+
+    Args:
+        status (str): Статус заказа.
+
+    Returns:
+        bool | JsonResponse: True, если статус корректен, иначе JsonResponse с сообщением об ошибке.
+    """
     values: List = Order.Status.values
     if status in values:
         return True
@@ -51,14 +69,26 @@ def status_is_correct(status: str) -> bool | JsonResponse:
 
 
 def calculation_revenue() -> Decimal:
-    """Возвращает общую сумму заказов."""
-    orders: List[Order] = Order.objects.filter(status=Order.Status.PAYED.value)
-    total_revenue = Decimal(0)
-    for order in orders:
-        total_revenue += order.total_price
-    return total_revenue
+    """
+    Возвращает общую сумму заказов.
+
+    Returns:
+        Decimal: Общая сумма заказов.
+    """
+    return sum(
+        order.total_price
+        for order in Order.objects.filter(status=Order.Status.PAYED.value)
+    )
 
 
 def get_count_orders(status: str) -> int:
-    """Возвращает количество заказов по статусу."""
+    """
+    Возвращает количество заказов по статусу.
+
+    Args:
+        status (str): Статус заказа.
+
+    Returns:
+        int: Количество заказов с указанным статусом.
+    """
     return Order.objects.filter(status=status).count()

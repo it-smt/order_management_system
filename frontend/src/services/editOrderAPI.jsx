@@ -6,7 +6,6 @@ function transformOrder(tableNumber, items) {
 }
 
 export async function editOrderAPI(id, tableNumber, items, setOrders) {
-	console.log(items);
 	const transformedOrder = transformOrder(tableNumber, items);
 	await fetch(`http://localhost:8000/api/v1/main/orders?order_id=${id}`, {
 		method: "PUT",
@@ -17,6 +16,10 @@ export async function editOrderAPI(id, tableNumber, items, setOrders) {
 	})
 		.then(res => res.json())
 		.then(data => {
+			if (data.msg) {
+				alert(data.msg);
+				return;
+			}
 			setOrders(prevOrders => {
 				return prevOrders.map(prevOrder => {
 					if (prevOrder.id === id) {
@@ -25,7 +28,6 @@ export async function editOrderAPI(id, tableNumber, items, setOrders) {
 					return prevOrder;
 				});
 			});
-			console.log(data);
 		})
 		.catch(err => console.error(err));
 }

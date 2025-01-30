@@ -10,7 +10,6 @@ export default function Header() {
 			<div className="container">
 				<div className="header__row">
 					<h2 className="header__logo">Order Management System</h2>
-					{/* TODO: Сделать вывод popup с инфой о выручке и количестве заказов */}
 					<p
 						onClick={() => {
 							setActiveStatistics(true);

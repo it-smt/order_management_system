@@ -13,5 +13,5 @@ export async function deleteOrderAPI(orderId, setOrders) {
 				);
 			}
 		})
-		.catch(err => console.log(err));
+		.catch(err => console.error(err));
 }

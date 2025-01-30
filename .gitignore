@@ -1,6 +1,7 @@
 .env
 __pycache__
 .venv
+.pytest_cache
 .env-non-dev
 
 # Logs

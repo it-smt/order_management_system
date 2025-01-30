@@ -9,7 +9,6 @@ export default function Search() {
 
 	const onSubmit = e => {
 		e.preventDefault();
-		console.log(value);
 		getOrdersAPI(setOrders, value, null);
 	};
 

@@ -32,15 +32,15 @@ def get_orders(
     Возвращает список всех заказов.
 
     Args:
-		request (HttpRequest): HTTP-запрос.
-		filter_status (str | None): Статус заказа для фильтрации.
-		search (str | None): Строка для поиска по номеру стола или статусу заказа.
+        request (HttpRequest): HTTP-запрос.
+        filter_status (str | None): Статус заказа для фильтрации.
+        search (str | None): Строка для поиска по номеру стола или статусу заказа.
 
     Returns:
-		JsonResponse: JSON-ответ со списком заказов.
+        JsonResponse: JSON-ответ со списком заказов.
 
     Raises:
-		JsonResponse: Если статус заказа некорректен.
+        JsonResponse: Если статус заказа некорректен.
     """
     query: Q = Q()
     if filter_status:
@@ -61,14 +61,14 @@ def order_add(request: HttpRequest, data: SOrderAdd) -> JsonResponse:
     Создает новый заказ.
 
     Args:
-		request (HttpRequest): HTTP-запрос.
-		data (SOrderAdd): Данные для создания заказа.
+        request (HttpRequest): HTTP-запрос.
+        data (SOrderAdd): Данные для создания заказа.
 
     Returns:
-		JsonResponse: Ответ с данными о созданном заказе или сообщением об ошибке.
+        JsonResponse: Ответ с данными о созданном заказе или сообщением об ошибке.
 
     Raises:
-		JsonResponse: Если заказ не содержит ни одного блюда.
+        JsonResponse: Если заказ не содержит ни одного блюда.
     """
     if len(data.items) < 1:
         return JsonResponse(
@@ -89,19 +89,19 @@ def order_add(request: HttpRequest, data: SOrderAdd) -> JsonResponse:
 @router.put("/orders", response={200: SOrder})
 def order_update(request: HttpRequest, order_id: int, data: SOrderAdd) -> JsonResponse:
     """
-	Обновляет заказ.
+    Обновляет заказ.
 
-	Args:
-		request (HttpRequest): HTTP-запрос.
-		order_id (int): Идентификатор заказа, который нужно обновить.
-		data (SOrderAdd): Данные для обновления заказа.
+    Args:
+        request (HttpRequest): HTTP-запрос.
+        order_id (int): Идентификатор заказа, который нужно обновить.
+        data (SOrderAdd): Данные для обновления заказа.
 
-	Returns:
-		JsonResponse: Ответ с данными об обновленном заказе.
+    Returns:
+    JsonRespons e: Ответ с данными об обновленном заказе.
 
-	Raises:
-		JsonResponse: Если заказ не содержит ни одного блюда.
-	"""
+    Raises:
+    JsonRespons e: Если заказ не содержит ни одного блюда.
+    """
     if len(data.items) < 1:
         return JsonResponse(
             SMsg(msg="Заказ должен содержать хотя бы одно блюдо!").model_dump(),
@@ -119,15 +119,15 @@ def order_update(request: HttpRequest, order_id: int, data: SOrderAdd) -> JsonRe
 @router.delete("/orders", response={200: SMsg})
 def order_delete(request: HttpRequest, order_id: int) -> JsonResponse:
     """
-	Удаляет заказ.
+    Удаляет заказ.
 
-	Args:
-		request (HttpRequest): HTTP-запрос.
-		order_id (int): Идентификатор заказа, который нужно удалить.
+    Args:
+        request (HttpRequest): HTTP-запрос.
+        order_id (int): Идентификатор заказа, который нужно удалить.
 
-	Returns:
-		JsonResponse: Ответ с сообщением об успешном удалении заказа.
-	"""
+    Returns:
+        JsonResponse: Ответ с сообщением об успешном удалении заказа.
+    """
     order: Order = get_object_or_404(Order, id=order_id)
     order.delete()
     return JsonResponse(
@@ -142,19 +142,19 @@ def change_order_status(
     request: HttpRequest, order_id: int, status: str
 ) -> JsonResponse:
     """
-	Изменяет статус заказа.
+    Изменяет статус заказа.
 
-	Args:
-		request (HttpRequest): HTTP-запрос.
-		order_id (int): Идентификатор заказа, для которого нужно изменить статус.
-		status (str): Новый статус заказа.
+    Args:
+        request (HttpRequest): HTTP-запрос.
+        order_id (int): Идентификатор заказа, для которого нужно изменить статус.
+        status (str): Новый статус заказа.
 
-	Returns:
-		JsonResponse: Ответ с сообщением об успешном изменении статуса заказа.
+    Returns:
+        JsonResponse: Ответ с сообщением об успешном изменении статуса заказа.
 
-	Raises:
-		JsonResponse: Если переданный статус заказа некорректен.
-	"""
+    Raises:
+        JsonResponse: Если переданный статус заказа некорректен.
+    """
     is_correct: bool | JsonResponse = status_is_correct(status)
     if isinstance(is_correct, JsonResponse):
         return is_correct
@@ -173,18 +173,20 @@ def change_order_status(
 @router.get("/statistics", response={200: SStatistics})
 def get_statistics(request: HttpRequest) -> JsonResponse:
     """
-	Возвращает статистику по заказам.
+    Возвращает статистику по заказам.
 
-	Args:
-		request (HttpRequest): HTTP-запрос.
+    Args:
+        request (HttpRequest): HTTP-запрос.
 
-	Returns:
-		JsonResponse: Ответ со статистикой по заказам.
-	"""
+    Returns:
+        JsonResponse: Ответ со статистикой по заказам.
+    """
     orders: List[Order] = Order.objects.all()
-    total_revenue: Decimal = orders.filter(status=Order.Status.PAYED).aggregate(
+    total_revenue: Decimal | None = orders.filter(status=Order.Status.PAYED).aggregate(
         total_revenue=Sum("total_price")
     )["total_revenue"]
+    if total_revenue is None:
+        total_revenue = Decimal(0)
     count_waiting: int = orders.filter(status=Order.Status.WAITING).count()
     count_done: int = orders.filter(status=Order.Status.DONE).count()
     count_payed: int = orders.filter(status=Order.Status.PAYED).count()
@@ -203,15 +205,15 @@ def get_statistics(request: HttpRequest) -> JsonResponse:
 @router.post("/items", response={201: SItemShow})
 def add_item(request: HttpRequest, data: SItemAdd) -> JsonResponse:
     """
-	Добавляет новое блюдо.
+    Добавляет новое блюдо.
 
-	Args:
-		request (HttpRequest): HTTP-запрос.
-		data (SItemAdd): Данные для создания нового блюда.
+    Args:
+        request (HttpRequest): HTTP-запрос.
+        data (SItemAdd): Данные для создания нового блюда.
 
-	Returns:
-		JsonResponse: Ответ с данными о созданном блюде.
-	"""
+    Returns:
+        JsonResponse: Ответ с данными о созданном блюде.
+    """
     item: Item = Item.objects.create(
         name=data.name,
         price=data.price,
@@ -223,13 +225,13 @@ def add_item(request: HttpRequest, data: SItemAdd) -> JsonResponse:
 @router.get("/items", response={200: List[SItemShow]})
 def get_items(request: HttpRequest) -> JsonResponse:
     """
-	Возвращает список всех блюд.
+    Возвращает список всех блюд.
 
-	Args:
-		request (HttpRequest): HTTP-запрос.
+    Args:
+        request (HttpRequest): HTTP-запрос.
 
-	Returns:
-		JsonResponse: Ответ со списком всех блюд.
-	"""
+    Returns:
+        JsonResponse: Ответ со списком всех блюд.
+    """
     items: List[Item] = Item.objects.all()
     return JsonResponse([get_dict_from_model(item) for item in items], safe=False)

@@ -1,9 +1,4 @@
-export async function addOrderAPI(
-	tableNumber,
-	items,
-	orders,
-	setOrders
-) {
+export async function addOrderAPI(tableNumber, items, orders, setOrders) {
 	await fetch("http://localhost:8000/api/v1/main/orders", {
 		method: "POST",
 		headers: {
@@ -16,6 +11,10 @@ export async function addOrderAPI(
 	})
 		.then(response => response.json())
 		.then(data => {
+			if (data.msg) {
+				alert(data.msg);
+				return;
+			}
 			setOrders([data, ...orders]);
 		})
 		.catch(err => console.error(err));
