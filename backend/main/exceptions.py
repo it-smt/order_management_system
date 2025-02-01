@@ -1,4 +1,5 @@
 from django.http import JsonResponse
+
 from main.api.v1.schemas import SMsg
 from main.models import Order
 
@@ -31,7 +32,8 @@ class Http400IncorrectStatus(HttpException):
     """Исключение для некорректного статуса заказа."""
 
     def __init__(self) -> None:
+        statuses: str = ", ".join(Order.Status.values)
         super().__init__(
-            f"Статус может иметь только следующие значения: {', '.join(Order.Status.values)}",
+            f"Статус может иметь только следующие значения: {statuses}",
             400,
         )

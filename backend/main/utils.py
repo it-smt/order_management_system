@@ -3,14 +3,10 @@ from logging import Logger, getLogger
 from typing import Dict, List
 
 from django.db.models import Model
-from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 
 from main.api.v1.schemas import SItem
-from main.exceptions import (
-    Http400EmptyItems,
-    Http400IncorrectStatus,
-)
+from main.exceptions import Http400EmptyItems, Http400IncorrectStatus
 from main.models import Item, Order
 
 logger: Logger = getLogger("django")
@@ -76,7 +72,7 @@ def status_is_correct(status: str) -> bool:
     values: List = Order.Status.values
     if status in values:
         return True
-    logger.info("Не удалось получить заказы. Введен некорректный статус.")
+    logger.warning("Не удалось получить заказы. Введен некорректный статус.")
     raise Http400IncorrectStatus
 
 
@@ -114,5 +110,5 @@ def check_items(items: List[SItem]) -> None:
         items (List[SItem]): Список блюд.
     """
     if len(items) < 1:
-        logger.info("Не удалось создать заказ. Должно быть хотя бы одно блюдо.")
+        logger.warning("Не удалось создать заказ. Должно быть хотя бы одно блюдо.")
         raise Http400EmptyItems

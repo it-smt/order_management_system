@@ -1,6 +1,7 @@
 from decimal import Decimal
-from logging import getLogger, Logger
+from logging import Logger, getLogger
 from typing import List
+
 from django.db import transaction
 from django.db.models import Q, Sum
 from django.http import HttpRequest, JsonResponse
@@ -87,7 +88,9 @@ def order_add(request: HttpRequest, data: SOrderAdd) -> JsonResponse:
         items=[{"id": item.id} for item in data.items],
     )
     order.save()
-    logger.info("Заказ #%s для столика %s успешно создан.")
+    logger.info(
+        "Заказ #%s для столика %s успешно создан.", order.id, order.table_number
+    )
 
     return JsonResponse(get_dict_from_model(order), status=201, safe=False)
 
@@ -117,6 +120,9 @@ def order_update(request: HttpRequest, order_id: int, data: SOrderAdd) -> JsonRe
     order.items = [{"id": item.id} for item in data.items]
     order.total_price = calculate_amount_items(data.items)
     order.save()
+    logger.info(
+        "Заказ #%s для столика %s успешно обновлен.", order.id, order.table_number
+    )
     return JsonResponse(get_dict_from_model(order), status=200, safe=False)
 
 
@@ -134,6 +140,7 @@ def order_delete(request: HttpRequest, order_id: int) -> JsonResponse:
     """
     order: Order = get_object_or_404(Order, id=order_id)
     order.delete()
+    logger.info("Заказ #%s успешно удален.", order_id)
     return JsonResponse(
         SMsg(msg=f"Заказ #{order_id} успешно удален!").model_dump(),
         status=200,
@@ -166,6 +173,7 @@ def change_order_status(
     order: Order = get_object_or_404(Order, id=order_id)
     order.status = Order.Status(status).label
     order.save()
+    logger.info("Статус заказа #%s успешно изменен на %s.", order_id, order.status)
     return JsonResponse(
         SMsg(
             msg=f"Статус заказа #{order.id} успешно изменен на {order.status}!"
@@ -193,6 +201,7 @@ def get_statistics(request: HttpRequest) -> JsonResponse:
     count_waiting: int = orders.filter(status=Order.Status.WAITING).count()
     count_done: int = orders.filter(status=Order.Status.DONE).count()
     count_payed: int = orders.filter(status=Order.Status.PAYED).count()
+    logger.info("Статистика по заказам получена.")
     return JsonResponse(
         SStatistics(
             total_revenue=total_revenue,
