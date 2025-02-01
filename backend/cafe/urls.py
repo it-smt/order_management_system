@@ -1,6 +1,5 @@
 from django.contrib import admin
 from django.urls import path
-
 from ninja import NinjaAPI
 
 from main.api.v1.router import router as main_router
