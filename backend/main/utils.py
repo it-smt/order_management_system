@@ -1,4 +1,5 @@
 from decimal import Decimal
+from logging import Logger, getLogger
 from typing import Dict, List
 
 from django.db.models import Model
@@ -6,7 +7,13 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 
 from main.api.v1.schemas import SItem
+from main.exceptions import (
+    Http400EmptyItems,
+    Http400IncorrectStatus,
+)
 from main.models import Item, Order
+
+logger: Logger = getLogger("django")
 
 
 def calculate_amount_items(items_ids: List[SItem]) -> Decimal:
@@ -23,6 +30,14 @@ def calculate_amount_items(items_ids: List[SItem]) -> Decimal:
 
 
 def get_dict_from_item(item_id: int) -> dict:
+    """
+    Получает словарь из модели Item.
+
+    Args:
+        item_id (int): Идентификатор блюда.
+    Returns:
+        Dict: Словарь с полями модели.
+    """
     item: Dict = get_object_or_404(Item, id=item_id).__dict__
     item.pop("_state")
     return item
@@ -48,7 +63,7 @@ def get_dict_from_model(model: Model) -> Dict:
     return model_dict
 
 
-def status_is_correct(status: str) -> bool | JsonResponse:
+def status_is_correct(status: str) -> bool:
     """
     Проверяет корректность статуса заказа.
 
@@ -61,11 +76,8 @@ def status_is_correct(status: str) -> bool | JsonResponse:
     values: List = Order.Status.values
     if status in values:
         return True
-    return JsonResponse(
-        {"msg": f"Статус может иметь только следующие значения: {', '.join(values)}"},
-        status=400,
-        safe=False,
-    )
+    logger.info("Не удалось получить заказы. Введен некорректный статус.")
+    raise Http400IncorrectStatus
 
 
 def calculation_revenue() -> Decimal:
@@ -92,3 +104,15 @@ def get_count_orders(status: str) -> int:
         int: Количество заказов с указанным статусом.
     """
     return Order.objects.filter(status=status).count()
+
+
+def check_items(items: List[SItem]) -> None:
+    """
+    Проверяет наличие блюд в списке.
+
+    Args:
+        items (List[SItem]): Список блюд.
+    """
+    if len(items) < 1:
+        logger.info("Не удалось создать заказ. Должно быть хотя бы одно блюдо.")
+        raise Http400EmptyItems

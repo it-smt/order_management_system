@@ -1,4 +1,5 @@
 from decimal import Decimal
+from logging import getLogger, Logger
 from typing import List
 from django.db import transaction
 from django.db.models import Q, Sum
@@ -14,14 +15,18 @@ from main.api.v1.schemas import (
     SOrderAdd,
     SStatistics,
 )
+from main.exceptions import Http400EmptyItems, Http400IncorrectStatus
 from main.models import Item, Order
 from main.utils import (
     calculate_amount_items,
+    check_items,
     get_dict_from_model,
     status_is_correct,
 )
 
 router: Router = Router()
+
+logger: Logger = getLogger("django")
 
 
 @router.get("/orders", response={200: List[SOrder]})
@@ -44,13 +49,15 @@ def get_orders(
     """
     query: Q = Q()
     if filter_status:
-        is_correct: bool | JsonResponse = status_is_correct(filter_status)
-        if isinstance(is_correct, JsonResponse):
-            return is_correct
+        try:
+            status_is_correct(filter_status)
+        except Http400IncorrectStatus as e:
+            return e()
         query &= Q(status=filter_status)
     if search:
         query &= Q(Q(table_number__icontains=search) | Q(status__icontains=search))
     orders: List[Order] = Order.objects.filter(query)
+    logger.info("Заказов получено: %s", orders.count())
     return JsonResponse([get_dict_from_model(order) for order in orders], safe=False)
 
 
@@ -70,18 +77,17 @@ def order_add(request: HttpRequest, data: SOrderAdd) -> JsonResponse:
     Raises:
         JsonResponse: Если заказ не содержит ни одного блюда.
     """
-    if len(data.items) < 1:
-        return JsonResponse(
-            SMsg(msg="Заказ должен содержать хотя бы одно блюдо!").model_dump(),
-            status=400,
-            safe=False,
-        )
+    try:
+        check_items(data.items)
+    except Http400EmptyItems as e:
+        return e()
     order: Order = Order.objects.create(
         table_number=data.table_number,
         total_price=calculate_amount_items(data.items),
         items=[{"id": item.id} for item in data.items],
     )
     order.save()
+    logger.info("Заказ #%s для столика %s успешно создан.")
 
     return JsonResponse(get_dict_from_model(order), status=201, safe=False)
 
@@ -97,17 +103,15 @@ def order_update(request: HttpRequest, order_id: int, data: SOrderAdd) -> JsonRe
         data (SOrderAdd): Данные для обновления заказа.
 
     Returns:
-    JsonRespons e: Ответ с данными об обновленном заказе.
+        JsonRespons e: Ответ с данными об обновленном заказе.
 
     Raises:
-    JsonRespons e: Если заказ не содержит ни одного блюда.
+        JsonRespons e: Если заказ не содержит ни одного блюда.
     """
-    if len(data.items) < 1:
-        return JsonResponse(
-            SMsg(msg="Заказ должен содержать хотя бы одно блюдо!").model_dump(),
-            status=400,
-            safe=False,
-        )
+    try:
+        check_items(data.items)
+    except Http400EmptyItems as e:
+        return e()
     order: Order = get_object_or_404(Order, id=order_id)
     order.table_number = data.table_number
     order.items = [{"id": item.id} for item in data.items]
@@ -155,9 +159,10 @@ def change_order_status(
     Raises:
         JsonResponse: Если переданный статус заказа некорректен.
     """
-    is_correct: bool | JsonResponse = status_is_correct(status)
-    if isinstance(is_correct, JsonResponse):
-        return is_correct
+    try:
+        status_is_correct(status)
+    except Http400IncorrectStatus as e:
+        return e()
     order: Order = get_object_or_404(Order, id=order_id)
     order.status = Order.Status(status).label
     order.save()
@@ -184,9 +189,7 @@ def get_statistics(request: HttpRequest) -> JsonResponse:
     orders: List[Order] = Order.objects.all()
     total_revenue: Decimal | None = orders.filter(status=Order.Status.PAYED).aggregate(
         total_revenue=Sum("total_price")
-    )["total_revenue"]
-    if total_revenue is None:
-        total_revenue = Decimal(0)
+    )["total_revenue"] or Decimal(0)
     count_waiting: int = orders.filter(status=Order.Status.WAITING).count()
     count_done: int = orders.filter(status=Order.Status.DONE).count()
     count_payed: int = orders.filter(status=Order.Status.PAYED).count()
