@@ -48,20 +48,20 @@ POSTGRES_PASSWORD=postgres
 
 ```python
 [
-	{
-		"id": int,
-		"table_number": int,
-		"items": [
-			{
-				"id": int
-			},
-			{
-				"id": int
-			}
-		],
-		"total_price": Decimal,
-		"status": str
-	}
+  {
+    "id": int,
+    "table_number": int,
+    "items": [
+      {
+        "id": int
+      },
+      {
+        "id": int
+      }
+    ],
+    "total_price": Decimal,
+    "status": str
+  }
 ]
 ```
 
@@ -77,15 +77,15 @@ POSTGRES_PASSWORD=postgres
 
 ```python
 {
-	"table_number": int, # Номер столика.
-	"items": [
-		{
-			"id": int
-		},
-		{
-			"id": int
-		}
-	] # Список с id блюд.
+  "table_number": int, # Номер столика.
+  "items": [
+    {
+      "id": int
+    },
+    {
+      "id": int
+    }
+  ] # Список с id блюд.
 }
 ```
 
@@ -95,18 +95,18 @@ POSTGRES_PASSWORD=postgres
 
 ```python
 {
-	"id": int,
-	"table_number": int,
-	"items": [
-		{
-			"id": int
-		},
-		{
-			"id": int
-		}
-	],
-	"total_price": Decimal,
-	"status": str
+  "id": int,
+  "table_number": int,
+  "items": [
+    {
+      "id": int
+    },
+    {
+      "id": int
+    }
+    ],
+    "total_price": Decimal,
+    "status": str
 }
 ```
 
@@ -128,8 +128,8 @@ POSTGRES_PASSWORD=postgres
 
 ```python
 {
-	"table_number": int, # Номер столика.
-	"items": [{"id": int}, {"id": int}] # Список id блюд.
+  "table_number": int, # Номер столика.
+  "items": [{"id": int}, {"id": int}] # Список id блюд.
 }
 ```
 
@@ -139,18 +139,18 @@ POSTGRES_PASSWORD=postgres
 
 ```python
 {
-	"id": int,
-	"table_number": int,
-	"items": [
-		{
-			"id": int
-		},
-		{
-			"id": int
-		}
-	],
-	"total_price": Decimal,
-	"status": str
+  "id": int,
+  "table_number": int,
+  "items": [
+    {
+      "id": int
+    },
+    {
+      "id": int
+    }
+  ],
+  "total_price": Decimal,
+  "status": str
 }
 ```
 
@@ -220,8 +220,8 @@ POSTGRES_PASSWORD=postgres
 
 ```python
 {
-	"name": str,
-	"price": Decimal
+  "name": str,
+  "price": Decimal
 }
 ```
 
