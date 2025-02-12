@@ -1,12 +1,16 @@
 from decimal import Decimal
 from logging import Logger, getLogger
-from typing import Dict, List
+from typing import Any, Dict, List
 
-from django.db.models import Model
+from django.db.models import Model, Sum
 from django.shortcuts import get_object_or_404
 
 from main.api.v1.schemas import SItem
-from main.exceptions import Http400EmptyItems, Http400IncorrectStatus
+from main.exceptions import (
+    Http400EmptyItems,
+    Http400IncorrectStatus,
+    Http404ItemsNotFound,
+)
 from main.models import Item, Order
 
 logger: Logger = getLogger("django")
@@ -22,7 +26,25 @@ def calculate_amount_items(items_ids: List[SItem]) -> Decimal:
     Returns:
         Decimal: Итоговая сумма блюд.
     """
-    return sum(get_object_or_404(Item, id=item.id).price for item in items_ids)
+    items_ids = [item.id for item in items_ids]
+    items: Item = Item.objects.filter(id__in=items_ids).values("id", "price")
+
+    if not items:
+        logger.error("Не найдено блюд для идентификаторов %s", items_ids)
+        raise Http404ItemsNotFound
+
+    items_dict: dict = {item["id"]: item["price"] for item in items}
+
+    total_amount: Decimal = Decimal(0)
+
+    for item_id in items_ids:
+        if item_id not in items_dict:
+            logger.warning("Блюдо с id %s не найдено в базе данных.", item_id)
+            continue
+
+        total_amount += items_dict[item_id]
+
+    return total_amount
 
 
 def get_dict_from_item(item_id: int) -> dict:
@@ -32,11 +54,18 @@ def get_dict_from_item(item_id: int) -> dict:
     Args:
         item_id (int): Идентификатор блюда.
     Returns:
-        Dict: Словарь с полями модели.
+        dict: Словарь с полями модели.
     """
-    item: Dict = get_object_or_404(Item, id=item_id).__dict__
-    item.pop("_state")
-    return item
+    try:
+        item: Item = get_object_or_404(Item, id=item_id)
+        return {
+            "id": item.id,
+            "name": item.name,
+            "price": item.price,
+        }
+    except Exception as e:
+        logger.error("Ошибка получения блюда с id %s: %s", item_id, str(e))
+        raise ValueError(f"Блюдо с id {item_id} не найдено.")
 
 
 def get_dict_from_model(model: Model) -> Dict:
@@ -49,13 +78,18 @@ def get_dict_from_model(model: Model) -> Dict:
     Returns:
         Dict: Словарь с полями модели.
     """
-    model_dict: Dict = model.__dict__
+    model_dict: Dict[str, Any] = {
+        field.name: getattr(model, field.name) for field in model._meta.fields
+    }
+
     if isinstance(model, Order):
-        model_dict["items"] = [
-            get_dict_from_item(item.get("id")) for item in model_dict["items"]
-        ]
-        model_dict["status"] = Order.Status(model.status).label
-    model_dict.pop("_state")
+        if "items" in model_dict:
+            model_dict["items"] = [
+                get_dict_from_item(item.get("id")) for item in model_dict["items"]
+            ]
+
+    model_dict.pop("_state", None)
+
     return model_dict
 
 
@@ -67,12 +101,14 @@ def status_is_correct(status: str) -> bool:
         status (str): Статус заказа.
 
     Returns:
-        bool | JsonResponse: True, если статус корректен, иначе JsonResponse с сообщением об ошибке.
+        bool: True, если статус корректен.
     """
     values: List = Order.Status.values
     if status in values:
         return True
-    logger.warning("Не удалось получить заказы. Введен некорректный статус.")
+    logger.warning(
+        "Некорректный статус: %s. Ожидались значения: %s", status, ", ".join(values)
+    )
     raise Http400IncorrectStatus
 
 
@@ -83,10 +119,11 @@ def calculation_revenue() -> Decimal:
     Returns:
         Decimal: Общая сумма заказов.
     """
-    return sum(
-        order.total_price
-        for order in Order.objects.filter(status=Order.Status.PAYED.value)
-    )
+    result: Decimal | None = Order.objects.filter(
+        status=Order.Status.PAYED.value
+    ).aggregate(total_revenue=Sum("total_price"))
+
+    return Decimal(result["total_revenue"] or 0)
 
 
 def get_count_orders(status: str) -> int:
@@ -99,6 +136,14 @@ def get_count_orders(status: str) -> int:
     Returns:
         int: Количество заказов с указанным статусом.
     """
+    if not status_is_correct(status):
+        logger.warning(
+            "Некорректный статус: %s. Ожидались значения: %s",
+            status,
+            ", ".join(Order.Status.values),
+        )
+        raise Http400IncorrectStatus
+
     return Order.objects.filter(status=status).count()
 
 
@@ -109,6 +154,6 @@ def check_items(items: List[SItem]) -> None:
     Args:
         items (List[SItem]): Список блюд.
     """
-    if len(items) < 1:
+    if not items:
         logger.warning("Не удалось создать заказ. Должно быть хотя бы одно блюдо.")
         raise Http400EmptyItems
