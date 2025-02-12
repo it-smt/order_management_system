@@ -1,6 +1,7 @@
 from logging import Logger, getLogger
 from typing import List
 
+from django.db.models import QuerySet
 from django.http import HttpRequest, JsonResponse
 from ninja import Router
 
@@ -16,6 +17,7 @@ from main.exceptions import (
     Http400EmptyItems,
     Http400IncorrectStatus,
     Http404ItemsNotFound,
+    Http404OrderNotFound,
 )
 from main.models import Order
 from main.services.item_service import ItemService
@@ -48,11 +50,10 @@ def get_orders(
         JsonResponse: Если статус заказа некорректен.
     """
     try:
-        orders: Order = OrderService.get(filter_status, search)
-        return JsonResponse(
-            [get_dict_from_model(order) for order in orders], safe=False
-        )
-    except Http400IncorrectStatus as e:
+        orders: QuerySet[Order] = OrderService.get(filter_status, search)
+        orders = [get_dict_from_model(order) for order in orders]
+        return JsonResponse(orders, safe=False)
+    except (Http400IncorrectStatus, Http404ItemsNotFound) as e:
         return e()
 
 
@@ -97,7 +98,7 @@ def order_update(request: HttpRequest, order_id: int, data: SOrderAdd) -> JsonRe
     try:
         order: Order = OrderService.update(order_id, data)
         return JsonResponse(get_dict_from_model(order), status=200, safe=False)
-    except (Http400EmptyItems, Http404ItemsNotFound) as e:
+    except (Http400EmptyItems, Http404ItemsNotFound, Http404OrderNotFound) as e:
         return e()
 
 
@@ -142,12 +143,12 @@ def change_order_status(
     """
     try:
         OrderService.change_status(order_id, status)
-    except Http400IncorrectStatus as e:
+    except (Http400IncorrectStatus, Http404OrderNotFound) as e:
         return e()
 
     return JsonResponse(
         SMsg(
-            msg=f"Статус заказа #{order_id} успешно изменен на {status}!"
+            msg=f'Статус заказа #{order_id} успешно изменен на "{status}"!'
         ).model_dump(),
         status=200,
         safe=False,
@@ -185,7 +186,8 @@ def get_items(request: HttpRequest) -> JsonResponse:
         JsonResponse: Ответ со списком всех блюд.
     """
     return JsonResponse(
-        [get_dict_from_model(item) for item in ItemService.get()], safe=False
+        [get_dict_from_model(item) for item in ItemService.get()],
+        safe=False,
     )
 
 
