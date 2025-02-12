@@ -1,11 +1,7 @@
-from decimal import Decimal
 from logging import Logger, getLogger
 from typing import List
 
-from django.db import transaction
-from django.db.models import Q, Sum
 from django.http import HttpRequest, JsonResponse
-from django.shortcuts import get_object_or_404
 from ninja import Router
 
 from main.api.v1.schemas import (
@@ -16,13 +12,16 @@ from main.api.v1.schemas import (
     SOrderAdd,
     SStatistics,
 )
-from main.exceptions import Http400EmptyItems, Http400IncorrectStatus
-from main.models import Item, Order
+from main.exceptions import (
+    Http400EmptyItems,
+    Http400IncorrectStatus,
+    Http404ItemsNotFound,
+)
+from main.models import Order
+from main.services.item_service import ItemService
+from main.services.order_service import OrderService
 from main.utils import (
-    calculate_amount_items,
-    check_items,
     get_dict_from_model,
-    status_is_correct,
 )
 
 router: Router = Router()
@@ -48,22 +47,16 @@ def get_orders(
     Raises:
         JsonResponse: Если статус заказа некорректен.
     """
-    query: Q = Q()
-    if filter_status:
-        try:
-            status_is_correct(filter_status)
-        except Http400IncorrectStatus as e:
-            return e()
-        query &= Q(status=filter_status)
-    if search:
-        query &= Q(Q(table_number__icontains=search) | Q(status__icontains=search))
-    orders: List[Order] = Order.objects.filter(query)
-    logger.info("Заказов получено: %s", orders.count())
-    return JsonResponse([get_dict_from_model(order) for order in orders], safe=False)
+    try:
+        orders: Order = OrderService.get(filter_status, search)
+        return JsonResponse(
+            [get_dict_from_model(order) for order in orders], safe=False
+        )
+    except Http400IncorrectStatus as e:
+        return e()
 
 
 @router.post("/orders", response={201: SOrder, 400: SMsg})
-@transaction.atomic
 def order_add(request: HttpRequest, data: SOrderAdd) -> JsonResponse:
     """
     Создает новый заказ.
@@ -79,20 +72,10 @@ def order_add(request: HttpRequest, data: SOrderAdd) -> JsonResponse:
         JsonResponse: Если заказ не содержит ни одного блюда.
     """
     try:
-        check_items(data.items)
-    except Http400EmptyItems as e:
+        order: Order = OrderService.add(data)
+        return JsonResponse(get_dict_from_model(order), status=201, safe=False)
+    except (Http400EmptyItems, Http404ItemsNotFound) as e:
         return e()
-    order: Order = Order.objects.create(
-        table_number=data.table_number,
-        total_price=calculate_amount_items(data.items),
-        items=[{"id": item.id} for item in data.items],
-    )
-    order.save()
-    logger.info(
-        "Заказ #%s для столика %s успешно создан.", order.id, order.table_number
-    )
-
-    return JsonResponse(get_dict_from_model(order), status=201, safe=False)
 
 
 @router.put("/orders", response={200: SOrder})
@@ -106,24 +89,16 @@ def order_update(request: HttpRequest, order_id: int, data: SOrderAdd) -> JsonRe
         data (SOrderAdd): Данные для обновления заказа.
 
     Returns:
-        JsonRespons e: Ответ с данными об обновленном заказе.
+        JsonResponse: Ответ с данными об обновленном заказе.
 
     Raises:
-        JsonRespons e: Если заказ не содержит ни одного блюда.
+        JsonResponse: Если заказ не содержит ни одного блюда.
     """
     try:
-        check_items(data.items)
-    except Http400EmptyItems as e:
+        order: Order = OrderService.update(order_id, data)
+        return JsonResponse(get_dict_from_model(order), status=200, safe=False)
+    except (Http400EmptyItems, Http404ItemsNotFound) as e:
         return e()
-    order: Order = get_object_or_404(Order, id=order_id)
-    order.table_number = data.table_number
-    order.items = [{"id": item.id} for item in data.items]
-    order.total_price = calculate_amount_items(data.items)
-    order.save()
-    logger.info(
-        "Заказ #%s для столика %s успешно обновлен.", order.id, order.table_number
-    )
-    return JsonResponse(get_dict_from_model(order), status=200, safe=False)
 
 
 @router.delete("/orders", response={200: SMsg})
@@ -138,9 +113,8 @@ def order_delete(request: HttpRequest, order_id: int) -> JsonResponse:
     Returns:
         JsonResponse: Ответ с сообщением об успешном удалении заказа.
     """
-    order: Order = get_object_or_404(Order, id=order_id)
-    order.delete()
-    logger.info("Заказ #%s успешно удален.", order_id)
+    OrderService.delete(order_id)
+
     return JsonResponse(
         SMsg(msg=f"Заказ #{order_id} успешно удален!").model_dump(),
         status=200,
@@ -167,16 +141,13 @@ def change_order_status(
         JsonResponse: Если переданный статус заказа некорректен.
     """
     try:
-        status_is_correct(status)
+        OrderService.change_status(order_id, status)
     except Http400IncorrectStatus as e:
         return e()
-    order: Order = get_object_or_404(Order, id=order_id)
-    order.status = Order.Status(status).label
-    order.save()
-    logger.info("Статус заказа #%s успешно изменен на %s.", order_id, order.status)
+
     return JsonResponse(
         SMsg(
-            msg=f"Статус заказа #{order.id} успешно изменен на {order.status}!"
+            msg=f"Статус заказа #{order_id} успешно изменен на {status}!"
         ).model_dump(),
         status=200,
         safe=False,
@@ -194,23 +165,27 @@ def get_statistics(request: HttpRequest) -> JsonResponse:
     Returns:
         JsonResponse: Ответ со статистикой по заказам.
     """
-    orders: List[Order] = Order.objects.all()
-    total_revenue: Decimal | None = orders.filter(status=Order.Status.PAYED).aggregate(
-        total_revenue=Sum("total_price")
-    )["total_revenue"] or Decimal(0)
-    count_waiting: int = orders.filter(status=Order.Status.WAITING).count()
-    count_done: int = orders.filter(status=Order.Status.DONE).count()
-    count_payed: int = orders.filter(status=Order.Status.PAYED).count()
-    logger.info("Статистика по заказам получена.")
+    statistics: dict = OrderService.get_statistics()
     return JsonResponse(
-        SStatistics(
-            total_revenue=total_revenue,
-            count_waiting=count_waiting,
-            count_done=count_done,
-            count_payed=count_payed,
-        ).model_dump(),
+        SStatistics(**statistics).model_dump(),
         status=200,
         safe=False,
+    )
+
+
+@router.get("/items", response={200: List[SItemShow]})
+def get_items(request: HttpRequest) -> JsonResponse:
+    """
+    Возвращает список всех блюд.
+
+    Args:
+        request (HttpRequest): HTTP-запрос.
+
+    Returns:
+        JsonResponse: Ответ со списком всех блюд.
+    """
+    return JsonResponse(
+        [get_dict_from_model(item) for item in ItemService.get()], safe=False
     )
 
 
@@ -226,24 +201,6 @@ def add_item(request: HttpRequest, data: SItemAdd) -> JsonResponse:
     Returns:
         JsonResponse: Ответ с данными о созданном блюде.
     """
-    item: Item = Item.objects.create(
-        name=data.name,
-        price=data.price,
+    return JsonResponse(
+        get_dict_from_model(ItemService.add(data)), status=201, safe=False
     )
-    item.save()
-    return JsonResponse(get_dict_from_model(item), status=201, safe=False)
-
-
-@router.get("/items", response={200: List[SItemShow]})
-def get_items(request: HttpRequest) -> JsonResponse:
-    """
-    Возвращает список всех блюд.
-
-    Args:
-        request (HttpRequest): HTTP-запрос.
-
-    Returns:
-        JsonResponse: Ответ со списком всех блюд.
-    """
-    items: List[Item] = Item.objects.all()
-    return JsonResponse([get_dict_from_model(item) for item in items], safe=False)
