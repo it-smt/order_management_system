@@ -1,8 +1,8 @@
-from decimal import Decimal
 from enum import Enum
 from typing import List
 
 from ninja.schema import Schema
+from pydantic import condecimal, Field
 
 
 class Status(Enum):
@@ -29,7 +29,7 @@ class SItemAdd(Schema):
     """Схема добавления блюда."""
 
     name: str
-    price: Decimal
+    price: condecimal(gt=0, max_digits=10, decimal_places=2)
 
 
 class SItemShow(SItemAdd, SItem):
@@ -48,21 +48,21 @@ class SOrderAdd(Schema):
     """Схема добавления заказа."""
 
     table_number: int
-    items: List[SItem]
+    items: List[SItem] = Field(..., min_items=1)
 
 
 class SOrder(SOrderAdd):
     """Схема заказа."""
 
     id: int
-    total_price: Decimal
+    total_price: condecimal(gt=0, max_digits=10, decimal_places=2)
     status: Status
 
 
 class SStatistics(Schema):
     """Схема статистики."""
 
-    total_revenue: Decimal
-    count_waiting: int
-    count_done: int
-    count_payed: int
+    total_revenue: condecimal(gt=0, max_digits=10, decimal_places=2)
+    count_waiting: int = Field(..., ge=0)
+    count_done: int = Field(..., ge=0)
+    count_payed: int = Field(..., ge=0)
