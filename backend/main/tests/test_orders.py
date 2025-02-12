@@ -7,6 +7,9 @@ from main.models import Order
 @pytest.mark.django_db
 def test_get_orders() -> None:
     """Тестирует эндпоинт /api/v1/main/orders."""
+
+    # TODO: Сделать рефакторинг.
+
     # Создаем тестовые заказы
     Order.objects.create(table_number="1", items=[{"id": 1}], status="Готово")
     Order.objects.create(table_number="2", items=[{"id": 2}, {"id": 2}])

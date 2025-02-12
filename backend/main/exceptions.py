@@ -56,3 +56,13 @@ class Http404ItemsNotFound(HttpException):
             "Некоторые блюда не были найдены.",
             HTTPStatus.BAD_REQUEST,
         )
+
+
+class Http404OrderNotFound(HttpException):
+    """Исключение для несуществующего заказа."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            "Заказ не найден.",
+            HTTPStatus.NOT_FOUND,
+        )

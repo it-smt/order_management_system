@@ -1,16 +1,16 @@
 from decimal import Decimal
 from logging import Logger, getLogger
-from django.db.models import Q, Sum
+
+from django.db.models import Q, QuerySet, Sum
 from django.shortcuts import get_object_or_404
 
-from main.api.v1.schemas import SItem, SOrderAdd
+from main.api.v1.schemas import SOrderAdd
 from main.exceptions import (
-    Http400EmptyItems,
     Http400IncorrectStatus,
-    Http404ItemsNotFound,
+    Http404OrderNotFound,
 )
 from main.models import Order
-from main.utils import calculate_amount_items, check_items, status_is_correct
+from main.services.item_service import ItemService
 
 logger: Logger = getLogger("django")
 
@@ -19,7 +19,9 @@ class OrderService:
     """Сервис для работы с заказами."""
 
     @staticmethod
-    def get(filter_status: str | None = None, search: str | None = None) -> list[Order]:
+    def get(
+        filter_status: str | None = None, search: str | None = None
+    ) -> QuerySet[Order]:
         """
         Получает список заказов с фильтрацией по статусу и поиском.
 
@@ -28,7 +30,7 @@ class OrderService:
             search (str | None): Поисковый запрос.
 
         Returns:
-            orders (list[Order]): Список заказов.
+            orders (QuerySet[Order]): Список заказов.
         """
         query: Q = Q()
 
@@ -38,7 +40,9 @@ class OrderService:
         if search:
             query &= Q(Q(table_number__icontains=search) | Q(status__icontains=search))
 
-        orders: list[Order] = Order.objects.filter(query)
+        orders: QuerySet[Order] = Order.objects.filter(query).only(
+            "id", "table_number", "items", "total_price", "status"
+        )
         logger.info("Заказов получено: %s", orders.count())
         return orders
 
@@ -50,11 +54,11 @@ class OrderService:
         Args:
             data (SOrderAdd): Данные заказа.
         """
-        OrderService._check_items(data.items)
+        ItemService.check_items(data.items)
 
         order: Order = Order.objects.create(
             table_number=data.table_number,
-            total_price=OrderService._calculate_amount_items(data.items),
+            total_price=ItemService.calculate_amount_items(data.items),
             items=[{"id": item.id} for item in data.items],
         )
         order.save()
@@ -75,19 +79,22 @@ class OrderService:
         Returns:
             JsonResponse: Ответ с данными об обновленном заказе.
         """
-        OrderService._check_items(data.items)
+        ItemService.check_items(data.items)
 
-        order: Order = get_object_or_404(Order, id=order_id)
-        order.table_number = data.table_number
-        order.items = [{"id": item.id} for item in data.items]
-        order.total_price = OrderService._calculate_amount_items(data.items)
-        order.save()
-
-        logger.info(
-            "Заказ #%s для столика %s успешно обновлен.", order.id, order.table_number
+        order: Order = Order.objects.filter(id=order_id)
+        if not order.exists():
+            raise Http404OrderNotFound
+        order.update(
+            table_number=data.table_number,
+            items=[{"id": item.id} for item in data.items],
+            total_price=ItemService.calculate_amount_items(data.items),
         )
 
-        return order
+        logger.info(
+            "Заказ #%s для столика %s успешно обновлен.", order_id, data.table_number
+        )
+
+        return order.first()
 
     @staticmethod
     def delete(order_id: int) -> None:
@@ -112,16 +119,18 @@ class OrderService:
         """
         OrderService._validate_status(status)
 
-        order: Order = get_object_or_404(Order, id=order_id)
-        order.status = Order.Status(status).label
-        order.save()
+        try:
+            Order.objects.get(id=order_id).update(status=Order.Status(status).label)
+        except Order.DoesNotExist:
+            logger.warning("Заказ с id %s не найден.", order_id)
+            raise Http404OrderNotFound
 
         logger.info("Статус заказа #%s успешно изменен на %s.", order_id, status)
 
     @staticmethod
     def get_statistics() -> dict:
         """Получает статистику по заказам."""
-        orders: list[Order] = Order.objects.all()
+        orders: QuerySet[Order] = Order.objects.all()
         total_revenue: Decimal | None = orders.filter(
             status=Order.Status.PAYED
         ).aggregate(total_revenue=Sum("total_price"))["total_revenue"] or Decimal(0)
@@ -137,25 +146,17 @@ class OrderService:
         }
 
     @staticmethod
-    def _calculate_amount_items(items: list[SItem]) -> Decimal:
-        """Рассчитывает итоговую стоимость блюд."""
-        try:
-            return calculate_amount_items(items)
-        except Http404ItemsNotFound as e:
-            raise e
-
-    @staticmethod
-    def _check_items(items: list[SItem]) -> None:
-        """Проверяет наличие блюд в списке."""
-        try:
-            check_items(items)
-        except Http400EmptyItems as e:
-            raise e
-
-    @staticmethod
     def _validate_status(status: str) -> None:
         """Проверяет корректность статуса заказа."""
         try:
-            status_is_correct(status)
+            values: list = Order.Status.values
+            if status in values:
+                return True
+            logger.warning(
+                "Некорректный статус: %s. Ожидались значения: %s",
+                status,
+                ", ".join(values),
+            )
+            raise Http400IncorrectStatus
         except Http400IncorrectStatus as e:
             raise e

@@ -62,7 +62,7 @@ class SOrder(SOrderAdd):
 class SStatistics(Schema):
     """Схема статистики."""
 
-    total_revenue: condecimal(gt=0, max_digits=10, decimal_places=2)
+    total_revenue: condecimal(ge=0, max_digits=10, decimal_places=2)
     count_waiting: int = Field(..., ge=0)
     count_done: int = Field(..., ge=0)
     count_payed: int = Field(..., ge=0)
