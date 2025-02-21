@@ -13,12 +13,6 @@ from main.api.v1.schemas import (
     SOrderAdd,
     SStatistics,
 )
-from main.exceptions import (
-    Http400EmptyItems,
-    Http400IncorrectStatus,
-    Http404ItemsNotFound,
-    Http404OrderNotFound,
-)
 from main.models import Order
 from main.services.item_service import ItemService
 from main.services.order_service import OrderService
@@ -49,12 +43,7 @@ def get_orders(
     Raises:
         JsonResponse: Если статус заказа некорректен.
     """
-    try:
-        orders: QuerySet[Order] = OrderService.get(filter_status, search)
-        orders = [get_dict_from_model(order) for order in orders]
-        return JsonResponse(orders, safe=False)
-    except (Http400IncorrectStatus, Http404ItemsNotFound) as e:
-        return e()
+    return OrderService.get(filter_status, search)
 
 
 @router.post("/orders", response={201: SOrder, 400: SMsg})
@@ -72,11 +61,8 @@ def order_add(request: HttpRequest, data: SOrderAdd) -> JsonResponse:
     Raises:
         JsonResponse: Если заказ не содержит ни одного блюда.
     """
-    try:
-        order: Order = OrderService.add(data)
-        return JsonResponse(get_dict_from_model(order), status=201, safe=False)
-    except (Http400EmptyItems, Http404ItemsNotFound) as e:
-        return e()
+    order: Order = OrderService.add(data)
+    return JsonResponse(get_dict_from_model(order), status=201, safe=False)
 
 
 @router.put("/orders", response={200: SOrder})
@@ -95,11 +81,8 @@ def order_update(request: HttpRequest, order_id: int, data: SOrderAdd) -> JsonRe
     Raises:
         JsonResponse: Если заказ не содержит ни одного блюда.
     """
-    try:
-        order: Order = OrderService.update(order_id, data)
-        return JsonResponse(get_dict_from_model(order), status=200, safe=False)
-    except (Http400EmptyItems, Http404ItemsNotFound, Http404OrderNotFound) as e:
-        return e()
+    order: Order = OrderService.update(order_id, data)
+    return JsonResponse(get_dict_from_model(order), status=200, safe=False)
 
 
 @router.delete("/orders", response={200: SMsg})
@@ -141,10 +124,7 @@ def change_order_status(
     Raises:
         JsonResponse: Если переданный статус заказа некорректен.
     """
-    try:
-        OrderService.change_status(order_id, status)
-    except (Http400IncorrectStatus, Http404OrderNotFound) as e:
-        return e()
+    OrderService.change_status(order_id, status)
 
     return JsonResponse(
         SMsg(

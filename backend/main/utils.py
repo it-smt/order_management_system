@@ -3,7 +3,7 @@ from typing import Any, Dict
 
 from django.db.models import Model
 
-from main.exceptions import Http404ItemsNotFound
+from main.exceptions.exceptions import Http404ItemsNotFound
 from main.models import Item, Order
 from main.services.item_service import ItemService
 
@@ -47,12 +47,9 @@ def get_dict_from_model(model: Model) -> Dict:
 
     if isinstance(model, Order):
         if "items" in model_dict:
-            try:
-                model_dict["items"] = [
-                    get_dict_from_item(item.get("id")) for item in model_dict["items"]
-                ]
-            except Http404ItemsNotFound as e:
-                raise e
+            model_dict["items"] = [
+                get_dict_from_item(item.get("id")) for item in model_dict["items"]
+            ]
 
     model_dict.pop("_state", None)
 

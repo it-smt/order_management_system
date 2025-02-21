@@ -27,42 +27,25 @@ class HttpException(Exception, ABC):
         return self.response
 
 
-class Http400EmptyItems(HttpException):
+class Http400EmptyItems(Exception):
     """Исключение для пустого списка блюд."""
 
-    def __init__(self) -> None:
-        super().__init__(
-            "Заказ должен содержать хотя бы одно блюдо.", HTTPStatus.BAD_REQUEST
-        )
+    pass
 
 
-class Http400IncorrectStatus(HttpException):
+class Http400IncorrectStatus(Exception):
     """Исключение для некорректного статуса заказа."""
 
-    _ALLOWED_STATUSES: str = ", ".join(map(str, Order.Status.values))
-
-    def __init__(self) -> None:
-        super().__init__(
-            f"Статус может иметь только следующие значения: {self._ALLOWED_STATUSES}",
-            HTTPStatus.BAD_REQUEST,
-        )
+    ALLOWED_STATUSES: str = ", ".join(map(str, Order.Status.values))
 
 
-class Http404ItemsNotFound(HttpException):
+class Http404ItemsNotFound(Exception):
     """Исключение для несуществующего объекта."""
 
-    def __init__(self) -> None:
-        super().__init__(
-            "Некоторые блюда не были найдены.",
-            HTTPStatus.BAD_REQUEST,
-        )
+    pass
 
 
-class Http404OrderNotFound(HttpException):
+class Http404OrderNotFound(Exception):
     """Исключение для несуществующего заказа."""
 
-    def __init__(self) -> None:
-        super().__init__(
-            "Заказ не найден.",
-            HTTPStatus.NOT_FOUND,
-        )
+    pass

@@ -1,3 +1,4 @@
+from decimal import Decimal
 from enum import Enum
 from typing import List
 
@@ -32,10 +33,12 @@ class SItemAdd(Schema):
     price: condecimal(gt=0, max_digits=10, decimal_places=2)
 
 
-class SItemShow(SItemAdd, SItem):
+class SItemShow(Schema):
     """Схема показа блюда."""
 
-    pass
+    id: int
+    name: str
+    price: float
 
 
 class OrderStatus(Schema):
@@ -48,7 +51,7 @@ class SOrderAdd(Schema):
     """Схема добавления заказа."""
 
     table_number: int
-    items: List[SItem] = Field(..., min_items=1)
+    items: list[SItem] = Field(..., min_items=1)
 
 
 class SOrder(SOrderAdd):
@@ -57,6 +60,16 @@ class SOrder(SOrderAdd):
     id: int
     total_price: condecimal(gt=0, max_digits=10, decimal_places=2)
     status: Status
+
+
+class SOrderShow(Schema):
+    """Схема показа заказа."""
+
+    id: int
+    table_number: int
+    items: list[SItemShow]
+    total_price: Decimal
+    status: str
 
 
 class SStatistics(Schema):
